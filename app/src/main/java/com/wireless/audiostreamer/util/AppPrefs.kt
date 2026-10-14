@@ -36,7 +36,9 @@ object AppPrefs {
 
     fun isConfigured(c: Context): Boolean {
         val r = role(c)
-        return (r == ROLE_SENDER || r == ROLE_RECEIVER) && pin(c).length >= 4
+        val p = pin(c)
+        return (r == ROLE_SENDER || r == ROLE_RECEIVER) &&
+            p.length in 4..8 && p.all { it.isDigit() }
     }
 
     /** Number of 20 ms frames the receiver buffers before playing. */

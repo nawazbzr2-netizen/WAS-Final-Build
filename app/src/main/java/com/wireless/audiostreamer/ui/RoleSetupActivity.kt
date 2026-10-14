@@ -26,7 +26,8 @@ class RoleSetupActivity : BaseActivity() {
 
         findViewById<Button>(R.id.btnContinue).setOnClickListener {
             val pin = etPin.text.toString().trim()
-            if (pin.length < 4) {
+            // Security: shared code must be 4–8 digits only; both phones need the same code
+            if (pin.length !in 4..8 || !pin.all { it.isDigit() }) {
                 Toast.makeText(this, R.string.pin_invalid, Toast.LENGTH_LONG).show()
                 return@setOnClickListener
             }

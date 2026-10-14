@@ -7,17 +7,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Unpack secure source
+      - name: Unpack feature source
         run: |
           set -e
-          cat scripts/p_*.b64 | tr -d '\n' | base64 -d > /tmp/src.zip
+          cat scripts/feat_*.b64 | tr -d '\n' | base64 -d > /tmp/src.zip
           unzip -o /tmp/src.zip -d /tmp/src
           cp -a /tmp/src/. .
-          find app/src -type f | sort
-          test -f app/src/main/java/com/wireless/audiostreamer/ui/MainActivity.kt
-          test -f app/src/main/java/com/wireless/audiostreamer/service/StreamingService.kt
-          grep -q CAMERA app/src/main/AndroidManifest.xml
-          echo Secure source OK
+          test -f app/src/main/java/com/wireless/audiostreamer/audio/MicCapturer.kt
+          test -f app/src/main/res/layout/activity_main.xml
+          grep -q btnMicSend app/src/main/res/layout/activity_main.xml
+          grep -q STREAM_MIC app/src/main/java/com/wireless/audiostreamer/network/Protocol.kt
+          echo Feature source OK
+          find app/src -type f | wc -l
       - uses: actions/setup-java@v4
         with:
           distribution: temurin

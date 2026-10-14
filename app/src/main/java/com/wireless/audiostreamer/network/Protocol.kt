@@ -7,6 +7,16 @@ object Protocol {
     const val PORT_AUDIO = 45455
     const val T_AUDIO = 1
     const val T_HELLO = 2
+    const val T_CAMERA = 3
+    const val T_FILE = 4
+
+    // Feature stream kinds (carried in app layer / service extra)
+    const val STREAM_SYSTEM = "SYSTEM"
+    const val STREAM_MIC = "MIC"
+    const val STREAM_CAMERA_FRONT = "CAM_FRONT"
+    const val STREAM_CAMERA_BACK = "CAM_BACK"
+    const val STREAM_STORAGE = "STORAGE"
+    const val STREAM_COMBO = "COMBO"
     const val SAMPLE_RATE = 48000
     const val SAMPLES = 960 // 20 ms @ 48 kHz, per channel
 

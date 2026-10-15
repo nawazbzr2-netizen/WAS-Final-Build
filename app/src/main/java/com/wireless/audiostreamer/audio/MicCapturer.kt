@@ -8,14 +8,9 @@ import android.os.Process
 import com.wireless.audiostreamer.network.Protocol
 import kotlin.concurrent.thread
 
-/**
- * Captures microphone audio (not system playback). Same frame size as SystemAudioCapturer
- * so the existing ADPCM / jitter path can be reused.
- */
-class MicCapturer(
-    private val outChannels: Int,
-    private val onFrame: (ShortArray) -> Unit
-) {
+/** Captures this phone's microphone (mono) for remote mic sharing — separate from the main
+ *  internal-audio mirroring feature, which uses AudioPlaybackCapture instead. */
+class MicCapturer(private val onFrame: (ShortArray) -> Unit) {
     @Volatile private var running = false
     private var record: AudioRecord? = null
     private var worker: Thread? = null
@@ -23,23 +18,13 @@ class MicCapturer(
     @SuppressLint("MissingPermission")
     fun start(): Boolean {
         return try {
-            val chMask = if (outChannels == 2)
-                AudioFormat.CHANNEL_IN_STEREO else AudioFormat.CHANNEL_IN_MONO
-            val fmt = AudioFormat.Builder()
-                .setEncoding(AudioFormat.ENCODING_PCM_16BIT)
-                .setSampleRate(Protocol.SAMPLE_RATE)
-                .setChannelMask(chMask)
-                .build()
             val min = AudioRecord.getMinBufferSize(
-                Protocol.SAMPLE_RATE, chMask, AudioFormat.ENCODING_PCM_16BIT
+                Protocol.SAMPLE_RATE, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT
             )
-            val size = maxOf(if (min > 0) min else 0, Protocol.SAMPLES * outChannels * 2 * 4)
+            val size = maxOf(if (min > 0) min else 0, Protocol.SAMPLES * 2 * 4)
             val rec = AudioRecord(
-                MediaRecorder.AudioSource.MIC,
-                Protocol.SAMPLE_RATE,
-                chMask,
-                AudioFormat.ENCODING_PCM_16BIT,
-                size
+                MediaRecorder.AudioSource.VOICE_COMMUNICATION,
+                Protocol.SAMPLE_RATE, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT, size
             )
             if (rec.state != AudioRecord.STATE_INITIALIZED) {
                 rec.release()
@@ -58,25 +43,26 @@ class MicCapturer(
 
     private fun loop(rec: AudioRecord) {
         Process.setThreadPriority(Process.THREAD_PRIORITY_URGENT_AUDIO)
-        val need = Protocol.SAMPLES * outChannels
-        val buf = ShortArray(need)
+        val frame = ShortArray(Protocol.SAMPLES)
         while (running) {
             var got = 0
-            while (got < need && running) {
-                val n = rec.read(buf, got, need - got)
-                if (n <= 0) break
+            while (running && got < frame.size) {
+                val n = rec.read(frame, got, frame.size - got, AudioRecord.READ_BLOCKING)
+                if (n < 0) {
+                    running = false
+                    break
+                }
                 got += n
             }
-            if (got == need && running) onFrame(buf.copyOf())
+            if (running) onFrame(frame.copyOf())
         }
     }
 
     fun stop() {
         running = false
-        try { worker?.join(500) } catch (_: Exception) { }
-        worker = null
-        try { record?.stop() } catch (_: Exception) { }
-        try { record?.release() } catch (_: Exception) { }
+        try { worker?.join(400) } catch (e: InterruptedException) { }
+        try { record?.stop() } catch (e: Exception) { }
+        try { record?.release() } catch (e: Exception) { }
         record = null
     }
 }

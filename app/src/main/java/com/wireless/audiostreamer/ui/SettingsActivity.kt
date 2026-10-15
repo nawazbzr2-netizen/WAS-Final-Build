@@ -1,7 +1,11 @@
 package com.wireless.audiostreamer.ui
 
 import android.content.Intent
+import android.net.Uri
+import android.os.Build
 import android.os.Bundle
+import android.os.Environment
+import android.provider.Settings
 import android.widget.Button
 import android.widget.EditText
 import android.widget.RadioButton
@@ -49,6 +53,23 @@ class SettingsActivity : BaseActivity() {
             "en" -> rbLangEn.isChecked = true
             "ur" -> rbLangUr.isChecked = true
             else -> rbLangSystem.isChecked = true
+        }
+
+        findViewById<Button>(R.id.btnStorageAccess).setOnClickListener {
+            try {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                    startActivity(
+                        Intent(
+                            Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION,
+                            Uri.parse("package:$packageName")
+                        )
+                    )
+                } else {
+                    Toast.makeText(this, R.string.saved, Toast.LENGTH_SHORT).show()
+                }
+            } catch (e: Exception) {
+                try { startActivity(Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION)) } catch (e2: Exception) { }
+            }
         }
 
         findViewById<Button>(R.id.btnSave).setOnClickListener {

@@ -34,6 +34,7 @@ import com.wireless.audiostreamer.R
 import com.wireless.audiostreamer.network.DiscoveryHelper
 import com.wireless.audiostreamer.network.NetUtil
 import com.wireless.audiostreamer.network.PacketCipher
+import com.wireless.audiostreamer.service.RemoteAccessService
 import com.wireless.audiostreamer.service.StreamingService
 import com.wireless.audiostreamer.util.AppPrefs
 
@@ -52,6 +53,7 @@ class MainActivity : BaseActivity() {
     private lateinit var btnStartListen: Button
     private lateinit var btnDisconnect: Button
     private lateinit var seekVolume: SeekBar
+    private lateinit var remoteAccessList: LinearLayout
 
     private val ui = Handler(Looper.getMainLooper())
     private var discovery: DiscoveryHelper? = null
@@ -127,6 +129,12 @@ class MainActivity : BaseActivity() {
         btnStartListen = findViewById(R.id.btnStartListen)
         btnDisconnect = findViewById(R.id.btnDisconnect)
         seekVolume = findViewById(R.id.seekVolume)
+        remoteAccessList = findViewById(R.id.remoteAccessList)
+
+        // Plain (non-foreground) start: it only listens for inbound requests until a
+        // capability is actually accepted, at which point it promotes itself and shows
+        // the ongoing notification (see RemoteAccessService).
+        startService(Intent(this, RemoteAccessService::class.java))
 
         tabLayout.addTab(tabLayout.newTab().setText(R.string.tab_wifi))
         tabLayout.addTab(tabLayout.newTab().setText(R.string.tab_bt))
@@ -201,6 +209,7 @@ class MainActivity : BaseActivity() {
             StreamingService.lastText, StreamingService.lastError
         )
         updateUi()
+        renderRemoteAccess()
     }
 
     override fun onPause() {
@@ -264,6 +273,18 @@ class MainActivity : BaseActivity() {
         }
     }
 
+    private fun renderRemoteAccess() {
+        remoteAccessList.removeAllViews()
+        for (p in peers) {
+            addButton(remoteAccessList, getString(R.string.ra_peer_fmt, p.name, p.ip)) {
+                val i = Intent(this, RemoteControlActivity::class.java)
+                i.putExtra(RemoteAccessService.EXTRA_PEER_IP, p.ip)
+                i.putExtra(RemoteAccessService.EXTRA_PEER_NAME, p.name)
+                startActivity(i)
+            }
+        }
+    }
+
     @SuppressLint("MissingPermission")
     private fun refreshBt() {
         btList.removeAllViews()
@@ -319,6 +340,7 @@ class MainActivity : BaseActivity() {
             ui.post {
                 peers = list
                 if (resumed && tab == 0) renderPeers()
+                renderRemoteAccess()
             }
         }
         d.start(AppPrefs.deviceName(), AppPrefs.role(this), AppPrefs.manualIp(this))

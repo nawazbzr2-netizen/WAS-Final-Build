@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
 
     <!-- Network (Wi-Fi / hotspot) -->
     <uses-permission android:name="android.permission.INTERNET" />
@@ -7,30 +8,38 @@
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
     <uses-permission android:name="android.permission.CHANGE_WIFI_MULTICAST_STATE" />
 
-    <!-- Bluetooth -->
+    <!-- Bluetooth: legacy permissions only up to Android 11, runtime permission from Android 12 -->
     <uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30" />
     <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" android:maxSdkVersion="30" />
     <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
 
-    <!-- Security: user must grant these before the app can stream -->
+    <!-- Required by AudioPlaybackCapture (captures internal audio, NOT the microphone) -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
-    <uses-permission android:name="android.permission.CAMERA" />
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
-    <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" />
 
-    <!-- Foreground service + persistent notification -->
+    <!-- Foreground service -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
 
+    <!-- Remote mic / camera / storage access: each one only starts after the other phone
+         taps Accept on a full-screen prompt (see IncomingRequestActivity). -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.VIBRATE" />
+    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CAMERA" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+    <!-- Lets the phone being accessed serve its own files; granted once via a Settings toggle
+         (Settings > Grant storage access in the app), not an install-time or per-request grant. -->
+    <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" tools:ignore="ScopedStorage" />
+
     <uses-feature android:name="android.hardware.bluetooth" android:required="false" />
     <uses-feature android:name="android.hardware.microphone" android:required="false" />
-    <uses-feature android:name="android.hardware.camera" android:required="false" />
     <uses-feature android:name="android.hardware.wifi" android:required="false" />
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
+    <uses-feature android:name="android.hardware.camera.front" android:required="false" />
 
     <application
         android:allowBackup="false"
@@ -63,7 +72,27 @@
         <service
             android:name=".service.StreamingService"
             android:exported="false"
-            android:foregroundServiceType="mediaPlayback|mediaProjection|microphone"
+            android:foregroundServiceType="mediaPlayback|mediaProjection"
             android:stopWithTask="false" />
+
+        <service
+            android:name=".service.RemoteAccessService"
+            android:exported="false"
+            android:foregroundServiceType="camera|microphone|dataSync"
+            android:stopWithTask="false" />
+
+        <activity
+            android:name=".ui.IncomingRequestActivity"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:launchMode="singleTask"
+            android:showWhenLocked="true"
+            android:turnScreenOn="true"
+            android:theme="@style/Theme.App" />
+
+        <activity
+            android:name=".ui.RemoteControlActivity"
+            android:exported="false"
+            android:parentActivityName=".ui.MainActivity" />
     </application>
 </manifest>

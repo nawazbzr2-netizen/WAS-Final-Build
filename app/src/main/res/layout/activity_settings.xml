@@ -175,6 +175,20 @@
                     android:text="@string/lang_ur" />
             </RadioGroup>
 
+            <TextView
+                style="@style/TextAppearance.Material3.TitleSmall"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:text="@string/s_storage_access" />
+
+            <Button
+                android:id="@+id/btnStorageAccess"
+                style="@style/Widget.Material3.Button.OutlinedButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/btn_storage_access" />
+
             <Button
                 android:id="@+id/btnSave"
                 android:layout_width="match_parent"
